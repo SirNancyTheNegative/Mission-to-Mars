@@ -19,6 +19,7 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
+        "hemispheres": hemisphere_scrape(browser),
         "last_modified": dt.datetime.now()
     }
 
@@ -95,7 +96,39 @@ def mars_facts():
     df.set_index('Description', inplace=True)
 
     # Convert dataframe into HTML format, add bootstrap
-    return df.to_html(classes="table table-striped")
+    return df.to_html(classes="table table-striped table-hover")
+
+def hemisphere_scrape(browser):
+    # 1. Use browser to visit the URL 
+    url = 'https://data-class-mars-hemispheres.s3.amazonaws.com/Mars_Hemispheres/index.html'
+
+    browser.visit(url)
+
+    # 2. Create a list to hold the images and titles.
+    hemisphere_image_urls = []
+
+    # 3. Write code to retrieve the image urls and titles for each hemisphere.
+    html = browser.html
+    mars_soup = soup(html, 'html.parser')
+    base_url = 'https://data-class-mars-hemispheres.s3.amazonaws.com/Mars_Hemispheres/'
+    hemi_loc = mars_soup.select_one('div', id_="product-section")
+    hemi_blurbs = hemi_loc.findAll('div',class_='item')
+
+    for blurb in hemi_blurbs:
+        hemi_href = blurb.findAll('a',class_='itemLink product-item')[1].get("href")
+        hemi_url = base_url + hemi_href
+        browser.visit(hemi_url)
+        
+        html = browser.html
+        mars_soup = soup(html, 'html.parser')
+        
+        hemi_img_loc = mars_soup.select_one('div',class_='container')
+        hemi_img = hemi_img_loc.find('img',class_="wide-image").get('src')
+        hemi_img_url = base_url + hemi_img
+        hemi_title = hemi_img_loc.find('h2',class_="title").get_text()
+        hemisphere_image_urls.append({"img_url":hemi_img_url,"title":hemi_title})
+    
+    return(hemisphere_image_urls)
 
 if __name__ == "__main__":
 
